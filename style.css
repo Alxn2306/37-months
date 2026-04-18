@@ -1,109 +1,254 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=Lato:wght@300;400&display=swap');
-*{box-sizing:border-box;margin:0;padding:0}
-body{width:100vw;height:100vh;overflow:hidden;background:#f7eeea;font-family:'Lato',sans-serif;cursor:pointer;user-select:none}
-#canvas{position:fixed;top:0;left:0;width:100%;height:100%;display:block}
 
-/* ── Pantalla de inicio ── */
-#start-screen{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:12px;z-index:20;transition:opacity .7s ease}
-#start-screen svg{animation:pulse 1.4s ease-in-out infinite}
-.start-title{font-family:'Playfair Display',serif;color:#a03030;font-size:22px;letter-spacing:3px}
-.start-hint{color:#c06060;font-size:13px;letter-spacing:1px;font-weight:300;animation:fadeh 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.13)}}
-@keyframes fadeh{0%,100%{opacity:.4}50%{opacity:1}}
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Texto amor — escritorio ── */
-#love-text{
-  position:fixed;
-  left:4%;
-  top:50%;
-  transform:translateY(-50%);
-  font-family:'Playfair Display',serif;
-  color:#e05070;
-  font-size:13px;
-  line-height:1.8;
-  max-width:26%;
-  max-height:90vh;
-  overflow:hidden;
-  opacity:0;
-  transition:opacity 1.5s ease;
-  z-index:10;
-  pointer-events:none;
+/* ── Body ── */
+body {
+  width: 100vw;
+  height: 100vh;
+  /* Permite scroll en móvil/tablet cuando el contenido supera la pantalla */
+  overflow-x: hidden;
+  overflow-y: hidden;
+  background: #f7eeea;
+  font-family: 'Lato', sans-serif;
+  cursor: pointer;
+  user-select: none;
+  /* Respeta el notch en iPhones */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
-.love-para{
-  margin-bottom:11px;
-  font-style:italic;
-}
-
-.love-para:last-child{
-  font-weight:bold;
-  font-style:normal;
-  font-size:14px;
-  color:#a03030;
-  margin-top:6px;
-  margin-bottom:0;
-}
-
-/* ── Timer ── */
-#timer-wrap{
-  position:fixed;
-  bottom:22px;
-  left:50%;
-  transform:translateX(-50%);
-  text-align:center;
-  opacity:0;
-  transition:opacity 1.5s ease;
-  z-index:10;
-  pointer-events:none;
-  white-space:nowrap;
-}
-.timer-label{color:#a03030;font-size:12px;letter-spacing:.8px;font-weight:300;margin-bottom:4px}
-#timer-display{font-family:'Playfair Display',serif;color:#7a2020;font-size:20px;letter-spacing:1px}
-
-/* ══════════════════════════════════════
-   TABLET  (601px – 1024px)
-   Árbol centrado, texto debajo
-══════════════════════════════════════ */
-@media(max-width:1024px) and (min-width:601px){
-  #love-text{
-    left:50%;
-    top:auto;
-    bottom:90px;
-    transform:translateX(-50%);
-    max-width:82%;
-    font-size:12px;
-    line-height:1.7;
-    text-align:center;
-  }
-  .love-para:last-child{ font-size:13px; }
-  #timer-wrap{ bottom:14px; }
-  #timer-display{ font-size:16px; }
-  .timer-label{ font-size:11px; }
+/* ── Canvas (siempre fijo detrás) ── */
+#canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;
 }
 
 /* ══════════════════════════════════════
-   MÓVIL  (≤600px)
-   Árbol centrado arriba, texto abajo scrolleable
+   PANTALLA DE INICIO
 ══════════════════════════════════════ */
-@media(max-width:600px){
-  #love-text{
-    left:50%;
-    top:auto;
-    bottom:80px;
-    transform:translateX(-50%);
-    max-width:90%;
-    max-height:38vh;
-    overflow-y:auto;
-    font-size:11px;
-    line-height:1.65;
-    text-align:center;
-    -webkit-overflow-scrolling:touch;
+#start-screen {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 20;
+  transition: opacity .7s ease;
+  text-align: center;
+  padding: 0 20px;
+}
+
+#start-screen svg { animation: pulse 1.4s ease-in-out infinite; }
+
+.start-title {
+  font-family: 'Playfair Display', serif;
+  color: #a03030;
+  font-size: clamp(16px, 4vw, 22px);
+  letter-spacing: 3px;
+}
+
+.start-hint {
+  color: #c06060;
+  font-size: clamp(11px, 2.5vw, 13px);
+  letter-spacing: 1px;
+  font-weight: 300;
+  animation: fadeh 2s ease-in-out infinite;
+}
+
+@keyframes pulse  { 0%,100%{transform:scale(1)}   50%{transform:scale(1.13)} }
+@keyframes fadeh  { 0%,100%{opacity:.4}            50%{opacity:1}             }
+
+
+/* ══════════════════════════════════════
+   TEXTO AMOR — BASE (escritorio >1024)
+   Árbol a la derecha (62% del ancho),
+   texto a la izquierda
+══════════════════════════════════════ */
+#love-text {
+  position: fixed;
+  left: 4%;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Playfair Display', serif;
+  color: #e05070;
+  font-size: clamp(11px, 1.1vw, 13px);
+  line-height: 1.8;
+  max-width: 26%;
+  /* En escritorio no hace scroll; el árbol ocupa la mitad derecha */
+  max-height: 90vh;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.love-para { margin-bottom: 11px; font-style: italic; }
+
+.love-para:last-child {
+  font-weight: bold;
+  font-style: normal;
+  font-size: clamp(12px, 1.2vw, 14px);
+  color: #a03030;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+/* ══════════════════════════════════════
+   TIMER — BASE (escritorio)
+══════════════════════════════════════ */
+#timer-wrap {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  z-index: 10;
+  pointer-events: none;
+  white-space: nowrap;
+  /* Ajuste para pantallas con notch */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.timer-label {
+  color: #a03030;
+  font-size: clamp(10px, 1.2vw, 12px);
+  letter-spacing: .8px;
+  font-weight: 300;
+  margin-bottom: 4px;
+}
+
+#timer-display {
+  font-family: 'Playfair Display', serif;
+  color: #7a2020;
+  font-size: clamp(13px, 2vw, 20px);
+  letter-spacing: 1px;
+}
+
+
+/* ══════════════════════════════════════
+   TABLET  (601 – 1024 px)
+   Árbol centrado en la mitad superior,
+   texto debajo del árbol
+══════════════════════════════════════ */
+@media (max-width: 1024px) and (min-width: 601px) {
+
+  #love-text {
+    /* Posición: debajo del árbol, centrado */
+    left: 50%;
+    top: auto;
+    bottom: 68px;          /* deja espacio al timer */
+    transform: translateX(-50%);
+    max-width: 84%;
+    max-height: 30vh;      /* no invade el árbol */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: clamp(11px, 1.6vw, 13px);
+    line-height: 1.7;
+    text-align: center;
+    /* fondo semi-transparente para legibilidad sobre el canvas */
+    background: rgba(247,238,234,0.82);
+    border-radius: 10px;
+    padding: 10px 14px;
+    backdrop-filter: blur(2px);
   }
-  .love-para{ margin-bottom:9px; }
-  .love-para:last-child{ font-size:12px; }
-  #timer-wrap{ bottom:10px; }
-  #timer-display{ font-size:14px; letter-spacing:.5px; }
-  .timer-label{ font-size:10px; }
-  .start-title{ font-size:18px; letter-spacing:2px; }
-  .start-hint{ font-size:11px; }
+
+  .love-para:last-child { font-size: clamp(12px, 1.7vw, 14px); }
+
+  #timer-wrap  { bottom: 12px; }
+  #timer-display { font-size: clamp(13px, 2.2vw, 16px); }
+  .timer-label   { font-size: clamp(10px, 1.4vw, 12px); }
+}
+
+
+/* ══════════════════════════════════════
+   MÓVIL  (≤ 600 px)
+   Árbol centrado en la mitad superior,
+   texto scrolleable en la parte inferior
+══════════════════════════════════════ */
+@media (max-width: 600px) {
+
+  body { overflow-y: hidden; }
+
+  #love-text {
+    left: 50%;
+    top: auto;
+    bottom: 58px;
+    transform: translateX(-50%);
+    max-width: 92%;
+    width: 92%;
+    max-height: 30vh;
+    overflow-y: scroll;            /* scroll siempre visible */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;  /* no arrastra la página */
+    font-size: clamp(10px, 3.2vw, 12px);
+    line-height: 1.65;
+    text-align: center;
+    background: rgba(247,238,234,0.88);
+    border-radius: 10px;
+    padding: 8px 12px;
+    backdrop-filter: blur(3px);
+    pointer-events: auto;          /* ← permite el scroll táctil */
+    cursor: default;
+    touch-action: pan-y;           /* ← le dice al navegador que es scroll vertical */
+  }
+
+  .love-para          { margin-bottom: 8px; }
+  .love-para:last-child { font-size: clamp(11px, 3.4vw, 13px); }
+
+  /* Timer compacto */
+  #timer-wrap {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    white-space: normal;       /* permite wrap si no cabe en una línea */
+    width: 90%;
+    text-align: center;
+  }
+
+  #timer-display {
+    font-size: clamp(12px, 3.8vw, 15px);
+    letter-spacing: .4px;
+  }
+
+  .timer-label { font-size: clamp(9px, 2.8vw, 11px); }
+
+  /* Pantalla inicio en móvil */
+  .start-title { font-size: clamp(15px, 5vw, 18px); letter-spacing: 2px; }
+  .start-hint  { font-size: clamp(10px, 3vw, 12px); }
+}
+
+
+/* ══════════════════════════════════════
+   ORIENTACIÓN LANDSCAPE en móvil
+   (altura reducida, ajuste especial)
+══════════════════════════════════════ */
+@media (max-width: 900px) and (orientation: landscape) {
+
+  #love-text {
+    left: 4%;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    max-width: 34%;
+    max-height: 85vh;
+    font-size: clamp(9px, 1.5vh, 12px);
+    text-align: left;
+    background: rgba(247,238,234,0.85);
+    border-radius: 10px;
+    padding: 8px 12px;
+  }
+
+  #timer-wrap { bottom: 6px; }
+  #timer-display { font-size: clamp(11px, 2vh, 14px); }
+  .timer-label   { font-size: clamp(9px, 1.6vh, 11px); }
 }

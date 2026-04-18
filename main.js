@@ -1,4 +1,3 @@
-
 const START_DATE = new Date('2023-03-18T00:00:00');
 const LOVE_NAME  = 'el amor de mi vida';
 const PARAGRAPHS = [
@@ -8,6 +7,7 @@ const PARAGRAPHS = [
   'No sé qué venga después, pero sí sé algo: mientras estés tú, yo voy a seguir intentando, voy a seguir cuidando esto, porque lo nuestro me importa de verdad.',
   'Te amo, y no es por costumbre… es porque eres tú.'
 ];
+
 /* ================================================================ */
 
 const canvas = document.getElementById('canvas');
@@ -21,34 +21,73 @@ function resize() {
 resize();
 window.addEventListener('resize', () => { resize(); buildPetals(); });
 
-/* ─── Audio ───────────────────────────────────────────────────── */
-const audio  = new Audio();
-audio.src    = 'patrick-watson-je-te-laisserai-des-mots.mp3';
-audio.loop   = true;
-audio.volume = 0.5;
+/* ─── Audio ─────────────────────────────────────────────────────── */
+const audio   = new Audio();
+audio.src     = 'patrick-watson-je-te-laisserai-des-mots.mp3';
+audio.loop    = true;
+audio.volume  = 0.5;
 audio.preload = 'auto';
 
-/* ─── Layout responsivo ───────────────────────────────────────── */
-// Escritorio (>1024): árbol a la derecha, texto a la izquierda
-// Tablet (601-1024):  árbol centrado un poco arriba, texto debajo
-// Móvil  (≤600):      árbol centrado arriba, texto debajo pequeño
+/* ─── Layout responsivo ─────────────────────────────────────────── */
+/*
+  ESCRITORIO (>1024 px, portrait o landscape):
+    Árbol a la DERECHA (62% del ancho), texto a la izquierda.
+    El árbol ocupa de tTop (≈52% H) a tBot (≈91% H).
 
-const isDesktop = () => W > 1024;
-const isTablet  = () => W > 600 && W <= 1024;
-const isMobile  = () => W <= 600;
+  LANDSCAPE MÓVIL/TABLET (≤900 px landscape):
+    Tratamos igual que tablet pero con árbol más alto para que quede
+    centrado verticalmente y el texto quede a la izquierda (como escritorio).
 
-const tx   = () => isDesktop() ? W * 0.62 : W * 0.50;
-const tBot = () => isDesktop() ? H * 0.91 : isMobile() ? H * 0.72 : H * 0.82;
-const tTop = () => isDesktop() ? H * 0.52 : isMobile() ? H * 0.32 : H * 0.40;
-const cR   = () => {
-  if (isMobile()) return Math.min(W, H) * 0.195;
-  if (isTablet()) return Math.min(W, H) * 0.220;
-  return Math.min(W, H) * 0.245;
+  TABLET (601-1024 px, portrait):
+    Árbol centrado horizontalmente, copa arriba (≈38% H),
+    base en ≈78% H.
+
+  MÓVIL (≤600 px, portrait):
+    Árbol centrado, copa arriba (≈28% H), base en ≈68% H.
+    Deja ≈32% inferior libre para texto + timer.
+*/
+
+const isLandscapeSmall = () => W <= 900 && W > H;   // móvil/tablet landscape
+const isDesktop        = () => W > 1024 && !isLandscapeSmall();
+const isTablet         = () => W > 600 && W <= 1024 && !isLandscapeSmall();
+const isMobile         = () => W <= 600 && !isLandscapeSmall();
+
+/* Centro X del árbol */
+const tx = () => {
+  if (isDesktop())        return W * 0.62;
+  if (isLandscapeSmall()) return W * 0.62;  // texto a la izq, árbol a la der
+  return W * 0.50;                           // centrado en portrait
 };
-const cX   = () => tx();
-const cY   = () => tTop() - cR() * 0.72;
 
-/* ─── Pétalos ─────────────────────────────────────────────────── */
+/* Pie del tronco */
+const tBot = () => {
+  if (isDesktop())        return H * 0.91;
+  if (isLandscapeSmall()) return H * 0.90;
+  if (isMobile())         return H * 0.68;  // más arriba → más espacio abajo
+  return H * 0.78;                          // tablet portrait
+};
+
+/* Cima del tronco (donde empieza la copa) */
+const tTop = () => {
+  if (isDesktop())        return H * 0.52;
+  if (isLandscapeSmall()) return H * 0.18;
+  if (isMobile())         return H * 0.28;  // copa en el tercio superior
+  return H * 0.38;
+};
+
+/* Radio de la copa */
+const cR = () => {
+  const u = Math.min(W, H);
+  if (isMobile())        return u * 0.190;
+  if (isTablet())        return u * 0.215;
+  if (isLandscapeSmall()) return u * 0.190;
+  return u * 0.245;
+};
+
+const cX = () => tx();
+const cY = () => tTop() - cR() * 0.72;
+
+/* ─── Pétalos ───────────────────────────────────────────────────── */
 const PETAL_N = 700;
 const COLORS  = [
   '#c0182a','#d42035','#e02840','#b81020',
@@ -59,9 +98,8 @@ const COLORS  = [
 let petals = [];
 
 function heartSDF(nx, ny) {
-  const xn = nx;
   const yn = ny + 0.12;
-  return Math.pow(xn*xn + yn*yn - 1, 3) - xn*xn * Math.pow(yn, 3);
+  return Math.pow(nx*nx + yn*yn - 1, 3) - nx*nx * Math.pow(yn, 3);
 }
 
 function buildPetals() {
@@ -72,7 +110,7 @@ function buildPetals() {
     const nx = (Math.random() * 2.2) - 1.1;
     const ny = (Math.random() * 2.0) - 1.0;
     if (heartSDF(nx, ny) > -0.02) continue;
-    const size = 4 + Math.random() * 8;
+    const size     = 4 + Math.random() * 8;
     const colorIdx = Math.random() < 0.65
       ? Math.floor(Math.random() * 6)
       : 6 + Math.floor(Math.random() * 6);
@@ -80,7 +118,7 @@ function buildPetals() {
       nx, ny, size,
       color: COLORS[colorIdx],
       delay: Math.random() * 0.85,
-      rot: Math.random() * Math.PI * 2
+      rot:   Math.random() * Math.PI * 2
     });
   }
 }
@@ -93,7 +131,7 @@ function petalPx(p) {
   };
 }
 
-/* ─── Corazón pequeño ─────────────────────────────────────────── */
+/* ─── Corazón pequeño ───────────────────────────────────────────── */
 function heart(hx, hy, s, color, alpha, rot) {
   if (alpha <= 0 || s <= 0) return;
   ctx.save();
@@ -122,7 +160,7 @@ function drawSeed(p) {
 
 /* ══════════════════════════════════════════════════════════════
    TRONCO + RAMAS
-   ══════════════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════ */
 function drawBranch(x0, y0, cpx, cpy, x1, y1, wStart, wEnd, t) {
   if (t <= 0) return;
   const steps = 14;
@@ -275,7 +313,7 @@ function drawTrunk(progress) {
   ctx.restore();
 }
 
-/* ─── Copa ────────────────────────────────────────────────────── */
+/* ─── Copa ──────────────────────────────────────────────────────── */
 function drawCrown(progress) {
   petals.forEach(p => {
     if (p.delay > progress) return;
@@ -286,22 +324,22 @@ function drawCrown(progress) {
   });
 }
 
-/* ─── Hojas cayendo ───────────────────────────────────────────── */
+/* ─── Hojas cayendo ─────────────────────────────────────────────── */
 let falling = [];
 
 function spawnLeaf() {
   const src = petals[Math.floor(Math.random() * petals.length)];
   const pos = petalPx(src);
   falling.push({
-    x: pos.x + (Math.random() - .5) * 14,
-    y: pos.y + (Math.random() - .5) * 14,
-    vx: (Math.random() - .5) * 1.8,
-    vy: .8 + Math.random() * 2.2,
-    size: 3 + Math.random() * 5.5,
+    x:     pos.x + (Math.random() - .5) * 14,
+    y:     pos.y + (Math.random() - .5) * 14,
+    vx:    (Math.random() - .5) * 1.8,
+    vy:    .8 + Math.random() * 2.2,
+    size:  3 + Math.random() * 5.5,
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
     alpha: 1,
     angle: Math.random() * Math.PI * 2,
-    rot: (Math.random() - .5) * .055
+    rot:   (Math.random() - .5) * .055
   });
 }
 
@@ -314,14 +352,14 @@ function updateLeaves() {
   });
 }
 
-/* ─── Loop ────────────────────────────────────────────────────── */
+/* ─── Loop ──────────────────────────────────────────────────────── */
 const DUR = { seed:1100, trunk:3200, crown:3500, text:700 };
 let phase = 'idle', phaseStart = 0, rafId = null, timerTick = null;
 
 function loop(ts) {
   const e = ts - phaseStart;
   resize(); bg();
-  if (phase === 'seed')       { drawSeed(Math.min(1, e / DUR.seed)); if (e >= DUR.seed) next(ts, 'trunk'); }
+  if      (phase === 'seed')  { drawSeed(Math.min(1, e / DUR.seed));  if (e >= DUR.seed)  next(ts, 'trunk'); }
   else if (phase === 'trunk') { drawSeed(1); drawTrunk(Math.min(1, e / DUR.trunk)); if (e >= DUR.trunk) next(ts, 'crown'); }
   else if (phase === 'crown') { drawTrunk(1); drawCrown(Math.min(1, e / DUR.crown)); if (e >= DUR.crown) next(ts, 'text'); }
   else if (phase === 'text')  { drawTrunk(1); drawCrown(1); if (e >= DUR.text) next(ts, 'fall'); }
@@ -335,7 +373,7 @@ function next(ts, p) {
   if (p === 'fall') showTimer();
 }
 
-/* ─── Texto párrafo por párrafo ──────────────────────────────── */
+/* ─── Texto párrafo por párrafo ─────────────────────────────────── */
 function showText() {
   const wrap = document.getElementById('love-text');
   wrap.style.opacity = '1';
@@ -356,6 +394,7 @@ function showText() {
   });
 }
 
+/* ─── Timer ─────────────────────────────────────────────────────── */
 function showTimer() {
   document.getElementById('timer-wrap').style.opacity = '1';
   updateTimer();
@@ -368,19 +407,25 @@ function updateTimer() {
   const h = Math.floor((diff % 86400) / 3600);
   const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
   const s = String(diff % 60).padStart(2, '0');
-  document.getElementById('timer-display').textContent =
-    `${d} días  ${h} horas  ${m} minutos  ${s} segundos`;
+
+  /* En móvil portrait usamos saltos de línea para que no desborde */
+  const isMobilePortrait = window.innerWidth <= 600 && window.innerHeight > window.innerWidth;
+  document.getElementById('timer-display').textContent = isMobilePortrait
+    ? `${d} días · ${h}h ${m}m ${s}s`
+    : `${d} días  ${h} horas  ${m} minutos  ${s} segundos`;
 }
 
-/* ─── Inicio ──────────────────────────────────────────────────── */
-document.addEventListener('click', () => {
+/* ─── Inicio ────────────────────────────────────────────────────── */
+document.addEventListener('click', (e) => {
   if (phase !== 'idle') return;
+  /* Si el toque fue dentro del texto, ignorarlo */
+  if (e.target.closest('#love-text')) return;
   const ss = document.getElementById('start-screen');
   ss.style.opacity = '0';
   setTimeout(() => ss.style.display = 'none', 700);
   audio.load();
   audio.play().catch(() => setTimeout(() => audio.play().catch(() => {}), 500));
-  phase = 'seed';
+  phase      = 'seed';
   phaseStart = performance.now();
-  rafId = requestAnimationFrame(loop);
+  rafId      = requestAnimationFrame(loop);
 });
